@@ -13,10 +13,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/login', 301);
 
 Auth::routes();
 
-Route::get('/home', 'HomeController@index')->name('home');
+Route::get('/home', 'LinkController@index')->name('home');
+
+Route::get("/v1/{token}", 'HomeController@index')->name("view-url");
+
+Route::prefix("/account")->group(function(){
+    Route::get("/", "PerfilController@index")->name("miperfil");
+    Route::get("/view/{id}", "PerfilController@show");
+    Route::put('/edit/{id}', "PerfilController@update");
+});
+
+Route::resource('links', 'LinkController');

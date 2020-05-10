@@ -18,9 +18,12 @@ window.Vue = require('vue');
 
 // const files = require.context('./', true, /\.vue$/i)
 // files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
+import VueSweetalert2 from 'vue-sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css';
 
-Vue.component('example-component', require('./components/ExampleComponent.vue').default);
-
+Vue.use(VueSweetalert2);
+Vue.component("perfil-component", require("./components/PerfilComponent.vue").default);
+Vue.component("link-component", require("./components/LinkComponent.vue").default);
 /**
  * Next, we will create a fresh Vue application instance and attach it to
  * the page. Then, you may begin adding components to this application

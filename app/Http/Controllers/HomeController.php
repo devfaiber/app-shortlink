@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Link;
 class HomeController extends Controller
 {
     /**
@@ -21,8 +21,16 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index()
+
+    public function index($token, Request $request)
     {
-        return view('home');
+        $ruta = Link::whereRaw("BINARY `token`= ?",[$token])->first();
+
+        if(!$ruta){
+            return view("Home",compact("ruta"));
+        }
+
+        return redirect($ruta->url,);
     }
+
 }

@@ -1,0 +1,20 @@
+<template>
+
+</template>
+
+<script>
+export default {
+    mounted(){
+
+    },
+    data(){
+        return {
+
+        }
+    }
+}
+</script>
+
+<style>
+
+</style>
