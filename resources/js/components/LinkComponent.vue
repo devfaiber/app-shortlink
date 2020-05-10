@@ -1,29 +1,47 @@
 <template>
   <div class="container">
-    <button @click="create()" data-toggle="modal" data-target="#exampleModal" class="btn btn-md btn-primary float-right" >Nuevo link</button>
+    <h1>Mis Links</h1>
+
+    <button
+      @click="create()"
+      data-toggle="modal"
+      data-target="#exampleModal"
+      class="btn btn-md btn-primary float-right"
+    >Nuevo link</button>
     <div class="clearfix"></div>
+    <hr>
     <div class="row">
-      <div class="col-sm-3" v-for="item in links" :key="item.id">
+        <div class="col-12 d-flex justify-content-center" v-if="links.length <= 0">
+
+            <h4 class="d-inline-block" style="color:gray;"><em>Lo sentimo no posees ningun link guardado</em></h4>
+
+        </div>
+      <div class="col-sm-6 col-md-4 col-12 col-lg-3 mt-3" v-for="(item,i) in links" :key="item.id">
         <div>
           <div class="card">
             <div class="card-body">
               <h5 class="card-title align.item-center d-flex justify-content-between">
-                  {{ item.token }}
-                    <span class="icon" data-toggle="tooltip" data-placement="top" title="copiar" @click="copy(item.token)">
-                        <img src="images/icon-url.svg">
-                    </span>
-                </h5>
+                {{ item.token }}
+                <span
+                  class="icon"
+                  data-toggle="tooltip"
+                  data-placement="top"
+                  title="copiar"
+                  @click="copy(item.token)"
+                >
+                  <img src="images/icon-url.svg" />
+                </span>
+              </h5>
               <h6 class="card-subtitle mb-2 text-muted">{{ item.url}}</h6>
               <p class="card-text">{{ item.descripcion }}</p>
               <a
                 href="#"
                 class="btn btn btn-sm btn-primary"
-                @click.prevent="edit(item)"
+                @click.prevent="edit(i,item)"
                 data-toggle="modal"
                 data-target="#exampleModal"
-
               >edit</a>
-              <a href="#" class="btn btn-danger btn-sm" @click.prevent="remove(item)">delete</a>
+              <a href="#" class="btn btn-danger btn-sm" @click.prevent="remove(i,item)">delete</a>
             </div>
           </div>
         </div>
@@ -41,7 +59,7 @@
     >
       <div class="modal-dialog" role="document">
         <div class="modal-content">
-          <form action method="post" @submit.prevent="save()">
+          <form action method="post" @submit.prevent="validateSave()">
             <div class="modal-header">
               <h5 class="modal-title" id="exampleModalLabel">
                 <span v-if="link.id">Editar link</span>
@@ -52,12 +70,6 @@
               </button>
             </div>
             <div class="modal-body">
-              <div class="alert alert-success" v-if="statusResponse==201">
-                <p>Se ha realizo la actualizacion exitosamente ya puedes acceder al link que genero la aplicacion</p>
-              </div>
-              <div class="alert alert-danger" v-else-if="statusResponse!=201 && statusResponse!= 0">
-                <p>Hubo un error al intentar diseñar el link porfavor intente mas tarde, y si dicho problema continua comuniquese con el administrador</p>
-              </div>
 
               <div class="form-group" v-if="link.id">
                 <label for>ID</label>
@@ -80,17 +92,27 @@
               <div class="form-group">
                 <label for>Token generado:</label>
                 <p>{{ link.token |setUrl }}</p>
+                <span
+                  class="icon"
+                  data-toggle="tooltip"
+                  data-placement="top"
+                  title="copiar"
+                  @click="copy(link.token, true)"
+                >
+                  <img src="images/icon-url.svg" />
+                </span>
               </div>
             </div>
             <div class="modal-footer">
+                <input type="text" id="copypaste2" style="display:none;" />
               <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-              <button type="submit" class="btn btn-primary" :disabled="!link.url">Guardar cambios</button>
+              <button type="submit" class="btn btn-primary" :disabled="!link.url" >Guardar cambios</button>
             </div>
           </form>
         </div>
       </div>
     </div>
-    <input type="text" id="copypaste" style="display:none;">
+    <input type="text" id="copypaste" style="display:none;" />
   </div>
 </template>
 
@@ -116,6 +138,8 @@ export default {
   },
   data() {
     return {
+      is_delete: false,
+      index: null,
       statusResponse: 0,
       links: [],
       msg_copy: "copiar",
@@ -123,60 +147,142 @@ export default {
     };
   },
   methods: {
-    edit(item) {
+    edit(index, item) {
+      this.index = index;
       this.statusResponse = 0;
-      this.link = item;
+      this.link = Object.assign({}, item);
     },
-    remove(item) {
+    remove(index, item) {
+      this.index = index;
       this.statusResponse = 0;
       this.link = item;
+
+      this.$swal({
+        title: "Informacion",
+        text: "Estas seguro de eliminar este link?",
+        icon: "question",
+        showCancelButton: true
+      }).then(value => {
+        if (value.value) {
+          this.deleteLink();
+        }
+      });
+    },
+
+    deleteLink() {
+      Axios.delete("/links/" + this.link.id).then(resp => {
+        console.log(resp);
+        if (resp.status == 200) {
+          this.$swal({
+            icon: "success",
+            title: "Listo!",
+            text: "Se ha eliminado exitosamente."
+          });
+          this.links.splice(this.index, 1); // elimina el elemento que se borro
+        } else {
+          this.$swal({
+            icon: "error",
+            title: "Error!",
+            text: "No se ha podido eliminar el link."
+          });
+        }
+      });
     },
     create() {
       this.statusResponse = 0;
       this.link = { id: "", token: "", url: "", descripcion: "" };
     },
 
+    validateSave(){
+        var regexp = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+        if(regexp.test(this.link.url)){
+            this.save();
+        }else{
+            this.$swal({
+                icon: "warning",
+                title: "Aviso!",
+                text: "Porfavor rellene el campo de la url con datos validos"
+            });
+        }
+    },
     save() {
       this.statusResponse = 0;
       if (!this.link.id) {
         Axios.post("/links", this.link).then(resp => {
-          this.link = res.data;
+          this.link = resp.data;
 
           this.statusResponse = resp.status;
           if (resp.status == 201) {
-            this.links.push(this.resp.data);
+            this.links.push(resp.data);
+            this.$swal({
+              icon: "success",
+              title: "Listo!",
+              text: "El link se ha creado exitosamente"
+            });
+          } else {
+            this.$swal({
+              icon: "error",
+              title: "Error!",
+              text:
+                "El link se pudo crear en la base de datos, hubo un problema"
+            });
+          }
+        });
+      } else {
+        Axios.put("/links/" + this.link.id, this.link).then(resp => {
+          this.statusResponse = resp.status;
+          if (resp.status == 200) {
+            this.link = resp.data;
+            this.links[this.index] = this.link;
+            this.$swal({
+              icon: "success",
+              title: "Listo!",
+              text: "El link se ha actualizado exitosamente"
+            });
+          } else {
+            this.$swal({
+              icon: "error",
+              title: "Error!",
+              text:
+                "El link se pudo actualizar en la base de datos, hubo un problema"
+            });
           }
         });
       }
     },
-    copy(text){
-        let aux = document.querySelector("#copypaste");
-        aux.style.display="inline-block";
-        aux.setAttribute("value","http://localhost:8000/v1/"+text);
-        aux.select();
-        document.execCommand("copy");
-        aux.style.display="none";
+    copy(text, modal=false) {
+        let aux;
+        if(!modal){
+            aux = document.querySelector("#copypaste");
+        }else{
+            aux = document.querySelector("#copypaste2");
+        }
+
+      aux.style.display = "inline-block";
+      aux.setAttribute("value", "http://localhost:8000/v1/" + text);
+      aux.select();
+      document.execCommand("copy");
+      aux.style.display = "none";
     }
   }
 };
 </script>
 
 <style>
-    .icon{
-        outline: 1px solid #ccc;
-        padding: 2px 5px;
-        cursor:pointer;
-    }
-    .icon:hover{
-        background:rgb(139, 139, 139);
-        outline: 1px solid #ccc;
-        color:#fff;
-    }
-    .icon:active{
-        background:skyblue;
-
-    }
-    .btn-xs{
-        padding:2.5px 5px;
-    }
+.icon {
+  outline: 1px solid #ccc;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+.icon:hover {
+  background: rgb(139, 139, 139);
+  outline: 1px solid #ccc;
+  color: #fff;
+}
+.icon:active {
+  background: skyblue;
+}
+.btn-xs {
+  padding: 2.5px 5px;
+}
 </style>

@@ -15,7 +15,7 @@ class LinkController extends Controller
      */
     public function index()
     {
-        $links = Link::all();
+        $links = Link::where("user_id",Auth::id())->get();
 
         return view("link", compact("links"));
     }
@@ -83,7 +83,7 @@ class LinkController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $link = Link::find($id)->get();
+        $link = Link::find($id);
 
         $link->url = $request->input("url");
         $link->descripcion = $request->input("descripcion");
@@ -101,8 +101,10 @@ class LinkController extends Controller
      */
     public function destroy($id)
     {
-        $link = Link::find($id)->get();
+        $link = Link::find($id);
         $link->delete();
+
+        return $link;
     }
 
 }
